@@ -13,7 +13,7 @@ public class ClientsGraphQLApi {
     @Inject
     ClientsService clientsService;
 
-    @Query("viewer")
+    @Query("profile")
     public Client profile() {
         return clientsService.getCurrentClient();
     }
