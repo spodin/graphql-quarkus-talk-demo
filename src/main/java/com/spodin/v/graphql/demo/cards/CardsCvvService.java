@@ -1,7 +1,9 @@
 package com.spodin.v.graphql.demo.cards;
 
 import io.quarkus.runtime.Startup;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,19 +35,28 @@ public class CardsCvvService {
 
     @PostConstruct
     void init() {
-        try (var jsonStream =
-            Thread.currentThread().getContextClassLoader().getResourceAsStream("card_cvv.json")) {
-            if (jsonStream != null) {
-                List<CvvEntry> loaded = JSONB.fromJson(jsonStream,
-                    new ArrayList<CvvEntry>() {}.getClass().getGenericSuperclass());
+        try (var jsonStream = resourceStream("card_cvv.json")) {
+            List<CvvEntry> cvvEntries = JSONB.fromJson(jsonStream,
+                new ArrayList<CvvEntry>() {}.getClass().getGenericSuperclass());
 
-                for (var entry : loaded) {
-                    cvvStorage.put(entry.getCardId(), entry);
-                }
+            for (var entry : cvvEntries) {
+                cvvStorage.put(entry.getCardId(), entry);
             }
         } catch (IOException e) {
-            log.error("Failed to load CVV values", e);
+            throw new RuntimeException("Failed to load CVV values", e);
         }
+    }
+
+    private InputStream resourceStream(String name) throws FileNotFoundException {
+        var resourceStream = Thread.currentThread().getContextClassLoader()
+            .getResourceAsStream(name);
+
+        if (resourceStream == null) {
+            throw new FileNotFoundException(String.format(
+                "Resource with name '%s' not found", name));
+        }
+
+        return resourceStream;
     }
 
     public static class CvvEntry {
